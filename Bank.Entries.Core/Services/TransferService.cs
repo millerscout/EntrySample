@@ -1,6 +1,9 @@
-﻿using Bank.Entries.Core.DTOs;
+﻿using Bank.Entries.Core.Constants;
+using Bank.Entries.Core.DTOs;
 using Bank.Entries.Core.Interfaces;
 using Bank.Entries.Core.Models;
+using Newtonsoft.Json;
+using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,13 +11,15 @@ using System.Threading.Tasks;
 
 namespace Bank.Entries.Core
 {
-    public class TransferService 
+    public class TransferService
     {
         private ITransferRepository transferRepository;
+        private IConnection connection;
 
-        public TransferService(ITransferRepository transferRepository)
+        public TransferService(ITransferRepository transferRepository, IConnection connection)
         {
             this.transferRepository = transferRepository;
+            this.connection = connection;
         }
         public async Task<bool> InternalTransfer(TransferDTO internalTransferDTO)
         {
@@ -26,7 +31,7 @@ namespace Bank.Entries.Core
 
                 if (!SenderHasFunds(sender, internalTransferDTO.Value)) return UserDoesNotHaveFunds();
 
-                if (receiver==null) return ReceiverAccountNotFound();
+                if (receiver == null) return ReceiverAccountNotFound();
 
                 var result = await transferRepository.Transfer(internalTransferDTO);
 
@@ -52,7 +57,16 @@ namespace Bank.Entries.Core
 
         private void NotifyConsumers(TransferDTO internalTransferDTO)
         {
-            throw new NotImplementedException();
+            using (var channel = connection.CreateModel())
+            {
+                channel.ExchangeDeclare(ConsumersConstants.ExchangeName, ExchangeType.Direct, true, false, null);
+
+                channel.BasicPublish(
+                    ConsumersConstants.ExchangeName,
+                    ConsumersConstants.routingKeySuccess,
+                    null,
+                    Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(internalTransferDTO)));
+            }
         }
 
         private bool ReceiverAccountNotFound()

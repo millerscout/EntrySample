@@ -22,5 +22,7 @@ namespace Bank.Entries.Core.Models
             this.Digit = digit;
             this.Balance = balance;
         }
+
+        public void UpdateBalance(decimal amount) => Balance += amount;
     }
 }

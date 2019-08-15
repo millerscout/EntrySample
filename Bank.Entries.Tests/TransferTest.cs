@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using AutoFixture;
+using Bank.Entries.Core.DTOs;
+using Moq;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,6 +11,7 @@ namespace Bank.Entries.Tests
 {
     public class EntryTest : BaseTest
     {
+        private TransferDTO transferDTO;
 
         [Test]
         public void InternalTransferSuccess()
@@ -15,7 +19,7 @@ namespace Bank.Entries.Tests
             var amount = 200m;
             var amountInSendersAccount = 3000m;
 
-            this.Given(s => s.GivenSenderTransfers(amount))
+            this.Given(s => s.SenderTransfers(amount))
                 .And(s => s.ServicesAreAvaiableAndWorkingCorrectly())
                 .And(s => s.SenderCurrentyHaveOnAccount(amountInSendersAccount), $"Sender has {amountInSendersAccount}")
                .Then(s => s.ShouldPersist())
@@ -24,14 +28,27 @@ namespace Bank.Entries.Tests
                .And(s => s.ShouldHaveAddedToReceiver(amount))
                .BDDfy();
         }
+        [Test]
+        public void InternalTransferReceiverAccountNotFound()
+        {
+            var amount = 200m;
+            var amountInSendersAccount = 3000m;
 
+            this.Given(s => s.SenderTransfers(amount))
+                .And(s => s.SenderCurrentyHaveOnAccount(amountInSendersAccount), $"Sender has {amountInSendersAccount}")
+                .And(s => s.ServicesAreAvaiableAndWorkingCorrectly())
+               .Then(s => s.ReceiverAccountIsInvalid())
+               .Then(s => s.ShouldSendChangesToConsumers())
+               .Then(s => s.ShouldNotifyErrorToExchange())
+               .BDDfy();
+        }
         [Test]
         public void InternalTransferUnexpectedError()
         {
             var amount = 200m;
             var amountInSendersAccount = 3000m;
 
-            this.Given(s => s.GivenSenderTransfers(amount))
+            this.Given(s => s.SenderTransfers(amount))
                 .And(s => s.SenderCurrentyHaveOnAccount(amountInSendersAccount), $"Sender has {amountInSendersAccount}")
                 .And(s => s.ServicesAreAvaiableAndWorkingCorrectly())
                .Then(s => s.AnErrorOccurrs())
@@ -40,19 +57,23 @@ namespace Bank.Entries.Tests
                .BDDfy();
         }
 
+        [Test]
         public void InternalTransferInsufficientFunds()
         {
             var amount = 10000m;
             var amountInSendersAccount = 3000m;
 
-            this.Given(s => s.GivenSenderTransfers(20m))
+            this.Given(s => s.SenderTransfers(20m))
                 .And(s => s.SenderCurrentyHaveOnAccount(amountInSendersAccount), $"Sender has {amountInSendersAccount}")
                 .And(s => s.ServicesAreAvaiableAndWorkingCorrectly())
                .Then(s => s.ShouldPersist())
                .Then(s => s.ShouldSendChangesToConsumers())
                .BDDfy();
         }
-
+        private void ReceiverAccountIsInvalid()
+        {
+            Assert.Fail();
+        }
         private void SenderCurrentyHaveOnAccount(decimal amount)
         {
             Assert.Fail();
@@ -75,11 +96,14 @@ namespace Bank.Entries.Tests
         }
         public void ServicesAreAvaiableAndWorkingCorrectly()
         {
+
             Assert.Fail();
         }
-        public void GivenSenderTransfers(decimal amount)
+        public void SenderTransfers(decimal amount)
         {
-            Assert.Fail();
+            transferDTO = fixture.Create<TransferDTO>();
+            transferDTO.Value = amount;
+
         }
 
         public void ShouldPersist()

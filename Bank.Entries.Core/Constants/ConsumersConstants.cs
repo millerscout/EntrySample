@@ -8,9 +8,12 @@ namespace Bank.Entries.Core.Constants
     {
         public const string ExchangeName = "Transfers";
 
-        public const string routingKeyErrors = "errors";
+        public const string routingKeyError = "error";
 
         public const string routingKeySuccess = "success";
+
+        public const string routingKeyInsufficientFunds = "insufficient-funds";
+
 
 
     }

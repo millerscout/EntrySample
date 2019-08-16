@@ -29,7 +29,7 @@ namespace Bank.Entries.Core
 
                 var receiver = await transferRepository.GetBankAccount(internalTransferDTO.ReceiverBranch, internalTransferDTO.ReceiverNumber, internalTransferDTO.ReceiverDigit);
 
-                if (!SenderHasFunds(sender, internalTransferDTO.Value)) return UserDoesNotHaveFunds();
+                if (!SenderHasFunds(sender, internalTransferDTO.Value)) return UserDoesNotHaveFunds(sender);
 
                 if (receiver == null) return ReceiverAccountNotFound();
 
@@ -50,12 +50,21 @@ namespace Bank.Entries.Core
 
         private bool SenderHasFunds(BankAccount sender, decimal amount) => sender.Balance > amount;
 
+        /// <summary>
+        /// this may be plugged into an ELK.
+        /// </summary>
+        /// <param name="ex"></param>
         private void NotifyErrorToConsumers(Exception ex)
         {
-            throw new NotImplementedException();
+            SendToExchange(ex, ConsumersConstants.routingKeyError);
         }
 
         private void NotifyConsumers(TransferDTO internalTransferDTO)
+        {
+            SendToExchange(internalTransferDTO, ConsumersConstants.routingKeyInsufficientFunds);
+        }
+
+        private void SendToExchange<T>(T data, string routingKey)
         {
             using (var channel = connection.CreateModel())
             {
@@ -63,20 +72,23 @@ namespace Bank.Entries.Core
 
                 channel.BasicPublish(
                     ConsumersConstants.ExchangeName,
-                    ConsumersConstants.routingKeySuccess,
+                    routingKey,
                     null,
-                    Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(internalTransferDTO)));
+                    Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(data)));
             }
         }
 
         private bool ReceiverAccountNotFound()
         {
-            throw new NotImplementedException();
+            SendToExchange(new { Message = "Receiver Not Found" }, ConsumersConstants.routingKeyError);
+            return false;
         }
 
-        private bool UserDoesNotHaveFunds()
+        private bool UserDoesNotHaveFunds(BankAccount sender)
         {
-            throw new NotImplementedException();
+            SendToExchange(new { sender.Id }, ConsumersConstants.routingKeyInsufficientFunds);
+
+            return false;
         }
     }
 }

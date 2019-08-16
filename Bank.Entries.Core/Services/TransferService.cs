@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Bank.Entries.Core
 {
-    public class TransferService
+    public class TransferService : ITransferService
     {
         private ITransferRepository transferRepository;
         private IConnection connection;

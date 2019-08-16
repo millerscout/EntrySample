@@ -8,28 +8,28 @@
 
 3) start the project.
 
-
 Currently i`m not using any database.
 
 there is 2 accounts: 
-1)
-Branch: 1
-Number: 2
-Digit: 1
-Balance: 1000
+<p> 1)
+<p> Branch: 1
+<p> Number: 2
+<p> Digit: 1
+<p> Balance: 1000
 
-2)
-Branch: 1
-Number: 3
-Digit: 1
-Balance: 0
+<p> 2)
+<p> Branch: 1
+<p> Number: 3
+<p> Digit: 1
+<p> Balance: 0
 
 
-It's possible to check the message of the current execution accessing the rabbit on 127.0.0.1:15672
+<p> It's possible to check the message of the current execution accessing the rabbit on 127.0.0.1:15672
 with the user and password `guest`
 
-altough you'll need to bind the exchange Transfers to a queue.
+<p> altough you'll need to bind the exchange Transfers to a queue.
 there is 
+
 3 routing keys
 
         error
